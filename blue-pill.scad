@@ -1,15 +1,15 @@
 // ==========================================================================
 //
 // two-part housing, containing
-//    - blue-pill STM32F103C8T6 
+//    - blue-pill STM32F103C8 
 //    - 50 x 70 sea-of-holes prototype PCB
 //    - 2 x AAA battery holder
 //    - slider switch
 //    - two sunken m3 hex nuts + two normal M3 screws
 //
-// author :         Wouter van Ooijen
-// email :          wouter@voti.nl
-// last modified :  2017-10-14
+// author         :  Wouter van Ooijen
+// email          :  wouter@voti.nl
+// last modified  :  2017-10-18
 //
 // todo:
 // - pcb holddowns are too low, why?
@@ -23,12 +23,12 @@
 // - picture of explosion
 // - PCB rattles, calculate column height
 // - IR hole
-// - buzzer
-// - 4 leds
+// - buzzer hole
+// - 4 led holes
 // 
 // ==========================================================================
 
-// identification, put inside top and bootom
+// identification, put inside top and bottom
 id_text                  = [
    "blue-pill.scad v0.01",
    "www.github.com/wovo/openscad" ]; 
@@ -39,6 +39,7 @@ id_text                  = [
 circle_sides             = 10;
 
 // gap when comonents must fit inside one another
+// (like printed peg and hole, or a printed peg inside a PCB hole)
 // this depends on the printer accuracy
 // 0.1 seems to be OK for the Ultimaker 2+
 fitting_gap              = 0.1;
@@ -132,7 +133,7 @@ pcb_5x7_support_size     = 2 * pcb_5x7_hole_clearance;
 
 battery_size             = [ 51.0, 23.0 ];
 battery_height           = 12.0;
-battery_wires_gap        = [ 2.0, battery_wall, 6.0 ];                            
+battery_wires_gap        = [ 2.0, battery_wall, 6.0 ];
 
 magnets_diameter         = 24.5;
 magnets_distance         = [ 5.0, 10.0 ];
@@ -181,7 +182,7 @@ pcb_blue_origin      = battery_wall_origin + [ 0,
 notch_origin         = pcb_blue_origin + [ 0,
                             pcb_blue_size[ 1 ] + pcb_blue_gap ];
 
-screw_origin         = notch_origin + screw_offset;						
+screw_origin         = notch_origin + screw_offset;
 
 screw_to_side        = screw_offset[ 0 ];
 
@@ -198,8 +199,7 @@ pin_square           = pcb_5x7_size - dup2( 2 * pcb_5x7_hole_clearance );
 hold_down_height     = total_height
                           - 2 * wall_thickness 
                           - support_height
-                          // - pcb_5x7_thickness
-                          ;
+                          - pcb_5x7_thickness;
 
 
 // ==========================================================================
@@ -214,23 +214,22 @@ module blue_base( height ){
        union(){    
     
          // plate bottom    
-         linear_extrude( wall_thickness )
-            rounded_rectangle( outer_size, 
-               rounding_factor * wall_thickness );
+         rounded_plate( outer_size, wall_thickness, rounding_factor );
    
          // side walls    
-         linear_extrude( height ) 
-            difference() {
-               rounded_rectangle( outer_size, 
-                  rounding_factor * wall_thickness );
+         translate( [ 0, 0, wall_thickness ] ) 
+            linear_extrude( height - wall_thickness ) 
+               difference() {
+                  rounded_rectangle( outer_size, rounding_factor );
                translate( inner_origin ) 
                   square( inner_size );  
-         };    
+            }; 
    
          // battery wall
          linear_extrude( height )
             translate( battery_wall_origin ) 
-               square( [ outer_size[ 0 ] - wall_thickness * 2, battery_wall ] );   
+               square( [ outer_size[ 0 ] 
+			      - wall_thickness * 2, battery_wall ] );
       
          // notches between the PCBs
          difference(){
@@ -244,7 +243,8 @@ module blue_base( height ){
          linear_extrude( solder_height )
             repeat2( zero_y( inner_size - [ 2 * screw_to_side, 0 ] ))
                translate( screw_origin )
-                  my_circle( m_nut_diameter( screw ) / 2 + wall_thickness );
+                  my_circle( m_nut_diameter( screw ) / 2 
+				     + wall_thickness );
 
          // id text
          linear_extrude( height = wall_thickness + 0.2 )
@@ -287,11 +287,13 @@ module blue_bottom(){
                   linear_extrude( support_height )  
                      square( pcb_5x7_support_size ); 
             repeat4( pin_square )  
-               translate( pcb_5x7_origin + dup2( pcb_5x7_hole_clearance ))
+               translate( 
+			      pcb_5x7_origin + dup2( pcb_5x7_hole_clearance )
+			   )
                   rounded_peg( [ 
                      pcb_5x7_hole_diameter / 2 + 2 * fitting_gap,
                      pin_height ] ); 
-         };   
+         };
          
       }; 
       
@@ -307,16 +309,16 @@ module blue_bottom(){
           wall_thickness - magnets_cutout 
       ] )
          linear_extrude( wall_thickness )
-            repeat_plusmin( [ 
-              magnets_diameter / 2 + magnets_distance[ 0 ], 0 
-            ] )
-              my_circle( magnets_diameter / 2 );
-      
+            repeat_plusmin( 
+			   [ magnets_diameter / 2 + magnets_distance[ 0 ], 0 ] 
+			)
+               my_circle( magnets_diameter / 2 );
+
       // cut-outs  
       box( battery_wires_cutout ); 
       box( power_switch_cutout );      
-      
-   };       
+
+   };
 }
 
 
@@ -346,15 +348,13 @@ module blue_top(){
                      repeat4( pin_square )  
                         my_circle( pcb_5x7_hole_diameter / 2 ); 
          };           
-          
       };
-      
+
       // screw-head recess 
       repeat2( zero_y( inner_size - [ 2 * screw_to_side, 0 ] ))
          translate( screw_origin )
             m_screw_recess( screw ); 
-      
-   };       
+   };
 }
 
 

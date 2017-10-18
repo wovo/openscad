@@ -4,11 +4,12 @@
 //
 // author :         Wouter van Ooijen
 // email :          wouter@voti.nl
-// last modified :  2017-10-14
+// last modified :  2017-10-18
 //
 // todo:
 // - repeat4 should rotate, 2 should mirror
-// - screw recess, conincal screw head
+// - conincal screw head
+// - rounding factor must be size-independent
 // 
 // ==========================================================================
 
@@ -26,6 +27,16 @@ function make3( a, z = 0 ) = [ a[ 0 ], a[ 1 ], z ];
 function zero_x( b ) = [      0, b[ 1 ] ];
 function zero_y( b ) = [ b[ 0 ],      0 ];
 
+
+// ==========================================================================
+//
+// circle and sphere with a configurable number of segments
+//
+// ==========================================================================
+
+// can be pre-defined by the user
+circle_sides = 20;
+
 // circle with configured number of sides
 // (circle_sides must have been defined)
 module my_circle( d ){
@@ -35,6 +46,13 @@ module my_circle( d ){
 module my_sphere( d ){
    sphere( d, $fn = circle_sides );
 };
+
+
+// ==========================================================================
+//
+// repeaters
+//
+// ==========================================================================
 
 // union of 4 copies the children 
 // at the 4 corners of the argument (= [x,y] rectangle)
@@ -62,31 +80,12 @@ module repeat_plusmin( offset ){
    }    
 }
 
-// a rectangle with rounded corners
-module rounded_rectangle( size, rounding ){
-    x = size[ 0 ];
-    y = size[ 1 ];
-    r = rounding;
-    union(){
-       translate( [     r,     r ] ) my_circle( r );
-       translate( [ x - r,     r ] ) my_circle( r );
-       translate( [     r, y - r ] ) my_circle( r );
-       translate( [ x - r, y - r ] ) my_circle( r );
-       translate( [ 0, r ] ) square( [ x,         y - 2 * r ] );  
-       translate( [ r, 0 ] ) square( [ x - 2 * r, y         ] );  
-    }    
-}
 
-// a rectangle with rounded corners and rounded cutout
-module rounded_outline( size, rounding, thickness ){
-    s = size;
-    r = rounding;
-    t = thickness;
-    difference(){
-        rounded_rectangle( s, r );
-        translate( [ t, t ] ) rounded_rectangle( s - 2 * [ t, t ], r );     
-    }        
-}
+// ==========================================================================
+//
+// pole (peg) with either flat or rounded top
+//
+// ==========================================================================
 
 // pole with flat top
 // size = [ radius, height ]
@@ -112,6 +111,71 @@ module rounded_peg( size, fn = 10 ){
    };
 }   
 
+
+// ==========================================================================
+//
+// rounded forms for boxes
+//
+// ==========================================================================
+
+// a rectangle with rounded corners
+module rounded_rectangle( size, rounding ){
+    x = size[ 0 ];
+    y = size[ 1 ];
+    r = rounding;
+    union(){
+       translate( [     r,     r ] ) my_circle( r );
+       translate( [ x - r,     r ] ) my_circle( r );
+       translate( [     r, y - r ] ) my_circle( r );
+       translate( [ x - r, y - r ] ) my_circle( r );
+       translate( [ 0, r ] ) square( [ x,         y - 2 * r ] );  
+       translate( [ r, 0 ] ) square( [ x - 2 * r, y         ] );  
+    }    
+}
+
+module cutter_bar( size, rounding ){
+    translate( [ -1000, size, size ] )
+    mirror( [ 0, 1, 0 ] ) 
+    rotate( [ 0, 90, 0 ] ) 
+    linear_extrude( 2000 ) 
+    difference(){
+      square( dup2( size ) );
+      my_circle( size );
+   };
+}
+
+module rounded_plate( size, height, rounding ){
+   difference(){
+      linear_extrude( height ) 
+         rounded_rectangle( size, rounding );
+	  cutter_bar( height, rounding );
+	  mirror( [ 1, 0, 0 ] ) rotate( [ 0, 0, 90 ] ) 
+         cutter_bar( height, rounding );
+      translate( [ size[ 0 ], 0, 0 ] ) rotate( [ 0, 0, 90 ] ) 
+         cutter_bar( height, rounding ); 
+      translate( [ 0, size[ 1 ], 0 ] ) mirror( [ 0, 1, 0 ] ) 
+         cutter_bar( height, rounding ); 
+   };
+}
+
+// a rectangle with rounded corners and rounded cutout
+module rounded_outline( size, rounding, thickness ){
+    s = size;
+    r = rounding;
+    t = thickness;
+    difference(){
+        rounded_rectangle( s, r );
+        translate( [ t, t ] ) rounded_rectangle( s - 2 * [ t, t ], r );
+    }        
+}
+
+
+// ==========================================================================
+//
+// logo's
+//
+// ==========================================================================
+
 // HU-logo
 module hu_logo(){
    union(){
@@ -127,6 +191,13 @@ module hu_logo(){
       } 
    };
 }
+
+
+// ==========================================================================
+//
+// translated box
+//
+// ==========================================================================
 
 // box of specified size at specified location
 // argument = [ size [ x, y, z ], location [ x, y, z ] ]
@@ -202,3 +273,5 @@ module text2( x ){
 
 // hu_logo();
 // rounded_peg( [ 5, 10 ] );
+// cutter_bar( 1, 1 );
+// rounded_plate( [ 10, 20 ], 1, 1 );
