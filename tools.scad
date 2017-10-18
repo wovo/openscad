@@ -19,6 +19,9 @@ function dup3( x )   = [ x, x, x ];
 // take first two elements
 function take2( b )  = [ b[ 0 ], b[ 1 ] ];
 
+// add a third coordinate
+function make3( a, z = 0 ) = [ a[ 0 ], a[ 1 ], z ];
+
 // set one coordinate to 0
 function zero_x( b ) = [      0, b[ 1 ] ];
 function zero_y( b ) = [ b[ 0 ],      0 ];
@@ -122,7 +125,15 @@ module hu_logo(){
          my_circle( 5 / 2 );
          translate( [ - 10, 0, 0 ] ) square( [ 20, 15 ] );        
       } 
-   };		 
+   };
+}
+
+// box of specified size at specified location
+// argument = [ size [ x, y, z ], location [ x, y, z ] ]
+module box( box ){
+   translate( box[ 1 ] )
+      linear_extrude( box[ 0 ][ 2 ] )
+         square( [ box[ 0 ][ 0 ], box[ 0 ][ 1 ] ] );
 }
 
 
