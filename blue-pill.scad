@@ -18,6 +18,9 @@
 // - screw height (top recess and cutout)
 // - notches for PCB are too low??
 // - 'spread' cutouts over top and bottom
+// - inside size is smaller than set for the bb??
+// - turn the screw-cutouts
+// - text verdiepen, niet ophogen?
 // 
 // - front cutouts similar to wall cutouts
 // - picture of explosion
@@ -25,6 +28,16 @@
 // - IR hole
 // - buzzer hole
 // - 4 led holes
+// - battery notches, battery hold-down
+//
+// remember:
+// - set circle_sides to 10 for draft, 40 for print
+// - in cura use
+//    - profile: normal 
+//    - 100% filling
+//    - no support
+//    - no build plate adhesion
+//    - manually lower the temperature to 190C
 // 
 // ==========================================================================
 
@@ -36,7 +49,7 @@ id_text                  = [
 // circle and ball accuracy
 // this affects the rendering time a lot!
 // 20 (or even 10) is enough for drafts, 40 is high-quality
-circle_sides             = 10;
+circle_sides             = 40;
 
 // gap when comonents must fit inside one another
 // (like printed peg and hole, or a printed peg inside a PCB hole)
@@ -57,31 +70,37 @@ include <tools.scad>;
 // ==========================================================================
 
 // total outsize height of housing (bottom + top)
-total_height             = 15.0;
+total_height             = 16.0;
 
 // thickness of the external walls (and floors)
 // this has a big impact on printing time and material consumption!
+// 0.6 is fragile and flimsy, but still doable
 // 1.0 is sufficient but still a bit fragile
 // 1.2 is sturdier 
 // 2.0 is realy stiff
-wall_thickness           = 1.0;
+wall_thickness           = 0.6;
 
 // same as external wall is a good start, 
 // but it could be a bit thinner
-battery_wall             = min( wall_thickness, 1.0 );
+// 0.4 is not printed in the Ultimaker 2+ default settings, 0.6 is
+battery_wall             = min( wall_thickness, 0.6 );
 
 // horizontal gap between PCB and (inner) walls
 // 0.5 can give some rattling when the PCB is not secured
 // 0.0 is probably too tight (I never tried)
 pcb_blue_gap             = 0.2;
-pcb_5x7_gap              = 0.2;
+pcb_bb_gap               = 0.5;
 battery_gap              = 0.2;
 
 // the screw used to fasten top to bottom
 screw                    = m3();
 
+// the breadboard
+// tested with pcb_7_5 and pcb_6_4
+breadboard               = pcb_6_4;
+
 // solder side required free height 
-// = clearance between 5x7 PCB and bottom plate
+// = clearance between breadboard PCB and bottom plate
 // the blue pill is thinner so it will have a marginally larger clearance
 // 2.5 is the minimum for the pinheader connectors
 // 3.5 is required to avoid problems with the sunken nuts
@@ -106,9 +125,9 @@ aligner_height          = 3.0;
 // 3.0 leaves the edges almost unconnected
 rounding_factor         = 1.0;
 
-// depth of the embossing of images
-// must be (significantly) less than wall_thickness!
-embossing_depth        = 0.2;
+// hight of the embossing of texts
+// 0.2 is not visible on Ultimaker 2+ default settings
+text_embossing          = 0.4;
 
 
 // ==========================================================================
@@ -122,22 +141,22 @@ embossing_depth        = 0.2;
 pcb_blue_size            = [ 53.0, 23.0 ];
 pcb_blue_thickness       = 1.0;
 
-notch_size               = [ 7.0, 6.0 ];
-screw_offset             = [ 4.0, 3.0 ];
+notch_size               = [ 7.0, 7.0 ];
+screw_offset             = [ 3.2, 3.5 ];
 
-pcb_5x7_size             = [ 70.0, 50.0 ];
-pcb_5x7_thickness        = 1.6;
-pcb_5x7_hole_clearance   = 2.0;
-pcb_5x7_hole_diameter    = 1.6;
-pcb_5x7_support_size     = 2 * pcb_5x7_hole_clearance;
+pcb_bb_size             = pcb_size( breadboard );
+pcb_bb_thickness        = pcb_thickness( breadboard );
+pcb_bb_hole_clearance   = pcb_hole_offset( breadboard )[ 0 ];
+pcb_bb_hole_diameter    = pcb_hole_diameter( breadboard );
+pcb_bb_support_size     = 2 * pcb_bb_hole_clearance;
 
-battery_size             = [ 51.0, 23.0 ];
+battery_size             = [ 51.0, 24.5 ];
 battery_height           = 12.0;
 battery_wires_gap        = [ 2.0, battery_wall, 6.0 ];
 
 magnets_diameter         = 24.5;
 magnets_distance         = [ 5.0, 10.0 ];
-magnets_cutout           = 0.2;
+magnets_cutout           = 0.4;
 
 
 // ==========================================================================
@@ -146,19 +165,20 @@ magnets_cutout           = 0.2;
 //
 // ==========================================================================
 
-inner_size           = [ pcb_5x7_size[ 0 ] + 2 * pcb_5x7_gap,
+inner_size           = [ pcb_bb_size[ 0 ] + 2 * pcb_bb_gap,
                             battery_size[ 1 ] + 2 * battery_gap +
 						    battery_wall +
                             pcb_blue_size[ 1 ] + 2 * pcb_blue_gap +
 						    notch_size[ 1 ] + 
-                            pcb_5x7_size[ 1 ] + 2 * pcb_5x7_gap ];
+                            pcb_bb_size[ 1 ] + 2 * pcb_bb_gap ];
 
 outer_size           = inner_size + dup2( 2 * wall_thickness ); 
 
 bottom_height        = wall_thickness
                           + solder_height
                           + pcb_blue_thickness
-                          + 2.5; // for the switch cutout
+                          + 2.5 // for the switch cutout
+						  + 3.0;
                           
 top_height           = total_height - bottom_height;
 
@@ -186,20 +206,20 @@ screw_origin         = notch_origin + screw_offset;
 
 screw_to_side        = screw_offset[ 0 ];
 
-pcb_5x7_origin       = notch_origin + [ 0,
-                            notch_size[ 1 ] + pcb_5x7_gap ];
+pcb_bb_origin       = notch_origin + [ 0,
+                            notch_size[ 1 ] + pcb_bb_gap ];
                             
 power_switch_cutout  = [ [ wall_thickness, 8.0, 3.5 ], 
-                         make3( zero_x( pcb_5x7_origin ))
-                            + [ 0, 10, 6.0 ]];
+                         make3( zero_x( pcb_bb_origin ))
+                            + [ 0, 10, 7.1 ]];
 
 support_height       = wall_thickness + solder_height;
-pin_height           = support_height + pcb_5x7_thickness + 2.0; 
-pin_square           = pcb_5x7_size - dup2( 2 * pcb_5x7_hole_clearance ); 
+pin_height           = support_height + pcb_bb_thickness + 2.0; 
+pin_square           = pcb_bb_size - dup2( 2 * pcb_bb_hole_clearance ); 
 hold_down_height     = total_height
                           - 2 * wall_thickness 
                           - support_height
-                          - pcb_5x7_thickness;
+                          - pcb_bb_thickness;
 
 
 // ==========================================================================
@@ -247,7 +267,7 @@ module blue_base( height ){
 				     + wall_thickness );
 
          // id text
-         linear_extrude( height = wall_thickness + 0.2 )
+         linear_extrude( height = wall_thickness + text_embossing )
             translate( 
                [ outer_size[ 0 ] / 2, 
                ( battery_origin + battery_size / 2 )[ 1 ] ] )
@@ -280,18 +300,18 @@ module blue_bottom(){
          // bottom and walls    
          blue_base( bottom_height );
           
-         // 5x7 PCB supports and aligner pins
+         // bb PCB supports and aligner pins
          union(){ 
             repeat4( pin_square )
-               translate( pcb_5x7_origin )
+               translate( pcb_bb_origin )
                   linear_extrude( support_height )  
-                     square( pcb_5x7_support_size ); 
+                     square( pcb_bb_support_size ); 
             repeat4( pin_square )  
                translate( 
-			      pcb_5x7_origin + dup2( pcb_5x7_hole_clearance )
+			      pcb_bb_origin + dup2( pcb_bb_hole_clearance )
 			   )
                   rounded_peg( [ 
-                     pcb_5x7_hole_diameter / 2 + 2 * fitting_gap,
+                     pcb_bb_hole_diameter / 2 + 2 * fitting_gap,
                      pin_height ] ); 
          };
          
@@ -336,17 +356,17 @@ module blue_top(){
          // bottom and walls    
          blue_base( top_height );
           
-         // 5x7 PCB hold-downs
+         // bb PCB hold-downs
          difference(){ 
             linear_extrude( wall_thickness + hold_down_height )  
-               translate( pcb_5x7_origin )
+               translate( pcb_bb_origin )
                   repeat4( pin_square )
-                     square( pcb_5x7_support_size );
+                     square( pcb_bb_support_size );
             translate( [ 0, 0, wall_thickness ] ) 
                linear_extrude( hold_down_height ) 
-                  translate( pcb_5x7_origin + dup2( pcb_5x7_hole_clearance ))
+                  translate( pcb_bb_origin + dup2( pcb_bb_hole_clearance ))
                      repeat4( pin_square )  
-                        my_circle( pcb_5x7_hole_diameter / 2 ); 
+                        my_circle( pcb_bb_hole_diameter / 2 ); 
          };           
       };
 
@@ -373,5 +393,8 @@ module blue_both(){
 }
 
 // test
-blue_both();
+blue_bottom();
+// blue_top();
+// blue_both();
+
 	
