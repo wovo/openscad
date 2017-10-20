@@ -9,7 +9,7 @@
 //
 // author         :  Wouter van Ooijen
 // email          :  wouter@voti.nl
-// last modified  :  2017-10-18
+// last modified  :  2017-10-19
 //
 // todo:
 // - pcb holddowns are too low, why?
@@ -18,24 +18,21 @@
 // - screw height (top recess and cutout)
 // - notches for PCB are too low??
 // - 'spread' cutouts over top and bottom
-// - inside size is smaller than set for the bb??
-// - turn the screw-cutouts
-// - text verdiepen, niet ophogen?
+// - notches in battery compartment
+// - pcb notches are not attached to the walls
 // 
-// - front cutouts similar to wall cutouts
 // - picture of explosion
-// - PCB rattles, calculate column height
 // - IR hole
 // - buzzer hole
 // - 4 led holes
-// - battery notches, battery hold-down
+// - battery hold-down
 //
 // remember:
 // - set circle_sides to 10 for draft, 40 for print
 // - in cura use
 //    - profile: normal 
-//    - 100% filling
-//    - no support
+//    - 50% filling
+//    - enable support (for the nut recesses)
 //    - no build plate adhesion
 //    - manually lower the temperature to 190C
 // 
@@ -43,7 +40,7 @@
 
 // identification, put inside top and bottom
 id_text                  = [
-   "blue-pill.scad v0.01",
+   "blue-pill.scad v 0.2",
    "www.github.com/wovo/openscad" ]; 
 
 // circle and ball accuracy
@@ -74,8 +71,8 @@ total_height             = 16.0;
 
 // thickness of the external walls (and floors)
 // this has a big impact on printing time and material consumption!
-// 0.6 is fragile and flimsy, but still doable
-// 1.0 is sufficient but still a bit fragile
+// 0.6 is fragile and flimsy, but still doable for tryouts
+// 1.0 is still a bit fragile
 // 1.2 is sturdier 
 // 2.0 is realy stiff
 wall_thickness           = 0.6;
@@ -96,12 +93,11 @@ battery_gap              = 0.2;
 screw                    = m3();
 
 // the breadboard
-// tested with pcb_7_5 and pcb_6_4
-breadboard               = pcb_6_4;
+// tested with pcb_7_5, pcb_7_3, and pcb_6_4
+breadboard               = pcb_7_5;
 
 // solder side required free height 
 // = clearance between breadboard PCB and bottom plate
-// the blue pill is thinner so it will have a marginally larger clearance
 // 2.5 is the minimum for the pinheader connectors
 // 3.5 is required to avoid problems with the sunken nuts
 solder_height           = 3.5;
@@ -125,9 +121,9 @@ aligner_height          = 3.0;
 // 3.0 leaves the edges almost unconnected
 rounding_factor         = 1.0;
 
-// hight of the embossing of texts
-// 0.2 is not visible on Ultimaker 2+ default settings
-text_embossing          = 0.4;
+// engraving depth of the texts
+// 0.4 is not visible on Ultimaker 2+ default settings
+text_engraving          = 0.5;
 
 
 // ==========================================================================
@@ -154,7 +150,7 @@ battery_size             = [ 51.0, 24.5 ];
 battery_height           = 12.0;
 battery_wires_gap        = [ 2.0, battery_wall, 6.0 ];
 
-magnets_diameter         = 24.5;
+magnets_diameter         = 20.0;
 magnets_distance         = [ 5.0, 10.0 ];
 magnets_cutout           = 0.4;
 
@@ -210,8 +206,8 @@ pcb_bb_origin       = notch_origin + [ 0,
                             notch_size[ 1 ] + pcb_bb_gap ];
                             
 power_switch_cutout  = [ [ wall_thickness, 8.0, 3.5 ], 
-                         make3( zero_x( pcb_bb_origin ))
-                            + [ 0, 10, 7.1 ]];
+                         make3( zero2_x( pcb_bb_origin ))
+                            + [ 0, 10, 7.5 ]];
 
 support_height       = wall_thickness + solder_height;
 pin_height           = support_height + pcb_bb_thickness + 2.0; 
@@ -254,33 +250,44 @@ module blue_base( height ){
          // notches between the PCBs
          difference(){
             linear_extrude( height )
-               repeat2( zero_y( inner_size - notch_size ))
+               repeat2( zero2_y( inner_size - notch_size ))
                   translate( notch_origin )
                      square( notch_size );    
          };
          
          // sink for nut and screw
          linear_extrude( solder_height )
-            repeat2( zero_y( inner_size - [ 2 * screw_to_side, 0 ] ))
+            repeat2( zero2_y( inner_size - [ 2 * screw_to_side, 0 ] ))
                translate( screw_origin )
                   my_circle( m_nut_diameter( screw ) / 2 
 				     + wall_thickness );
 
-         // id text
-         linear_extrude( height = wall_thickness + text_embossing )
-            translate( 
-               [ outer_size[ 0 ] / 2, 
-               ( battery_origin + battery_size / 2 )[ 1 ] ] )
-                  text2( id_text );
+         // id text embossed
+         *translate( 
+            [ outer_size[ 0 ] / 2, 
+            ( battery_origin + battery_size / 2 )[ 1 ],
+            wall_thickness ] 
+         )
+            linear_extrude( text_engraving )
+               text2( id_text );
       };         
          
       union(){
           
          // screw hole  
          linear_extrude( height )
-            repeat2( zero_y( inner_size - [ 2 * screw_to_side, 0 ] ))
+            repeat2( zero2_y( inner_size - [ 2 * screw_to_side, 0 ] ))
                translate( screw_origin )
-                  my_circle( m_hole_diameter( screw )  / 2 );              
+                  my_circle( m_hole_diameter( screw )  / 2 );   
+          
+         // id text engraved
+         translate( 
+            [ outer_size[ 0 ] / 2, 
+            ( battery_origin + battery_size / 2 )[ 1 ],
+            wall_thickness - text_engraving ] 
+         )
+            linear_extrude( text_engraving )
+               text2( id_text );
       };    
    };    
 }
@@ -315,12 +322,26 @@ module blue_bottom(){
                      pin_height ] ); 
          };
          
+         // blue pill support ridge
+         linear_extrude( solder_height )
+            translate( pcb_blue_origin )
+               square( [ inner_size[ 0 ], 2.0 ] )
+		 
+		 // battery holder fixation pins
+		 translate( [
+            ( outer_size / 2 )[ 0 ],
+            ( battery_origin + battery_size / 2 )[ 1 ]
+         ] )
+		    repeat_plusmin( [ 10.0, 0.0 ] )
+		       rounded_peg( [ 2.5 / 2, 3.0 ] );
+         
       }; 
       
       // nut recess 
-      repeat2( zero_y( inner_size - [ 2 * screw_to_side, 0 ] ))
+      repeat2( zero2_y( inner_size - [ 2 * screw_to_side, 0 ] ))
          translate( screw_origin )
-            m_nut_recess( screw );  
+		    rotate( [ 0, 0, 90 ] )
+               m_nut_recess( screw );  
       
       // magnet cutout
       translate( [ 
@@ -348,7 +369,10 @@ module blue_bottom(){
 //
 // ==========================================================================
 
-module blue_top(){    
+module blue_top(){  
+
+   // requires inner_height ~= 20.0
+   lcd_5510_full_cutout( [ 9.0, 24.8, wall_thickness ] )  
      
    difference(){  
       union(){
@@ -371,7 +395,7 @@ module blue_top(){
       };
 
       // screw-head recess 
-      repeat2( zero_y( inner_size - [ 2 * screw_to_side, 0 ] ))
+      repeat2( zero2_y( inner_size - [ 2 * screw_to_side, 0 ] ))
          translate( screw_origin )
             m_screw_recess( screw ); 
    };
@@ -393,8 +417,8 @@ module blue_both(){
 }
 
 // test
-blue_bottom();
+// blue_bottom();
 // blue_top();
-// blue_both();
+blue_both();
 
 	

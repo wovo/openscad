@@ -4,12 +4,13 @@
 //
 // author :         Wouter van Ooijen
 // email :          wouter@voti.nl
-// last modified :  2017-10-18
+// last modified :  2017-10-19
 //
 // todo:
 // - repeat4 should rotate, 2 should mirror
 // - conincal screw head
 // - rounding factor must be size-independent
+// - rounded peg: remove lower ball part
 // 
 // ==========================================================================
 
@@ -24,8 +25,12 @@ function take2( b )  = [ b[ 0 ], b[ 1 ] ];
 function make3( a, z = 0 ) = [ a[ 0 ], a[ 1 ], z ];
 
 // set one coordinate to 0
-function zero_x( b ) = [      0, b[ 1 ] ];
-function zero_y( b ) = [ b[ 0 ],      0 ];
+function zero2_x( b ) = [      0, b[ 1 ] ];
+function zero2_y( b ) = [ b[ 0 ],      0 ];
+
+function zero3_x( b ) = [      0, b[ 1 ], b[ 2] ];
+function zero3_y( b ) = [ b[ 0 ],      0, b[ 2] ];
+function zero3_z( b ) = [ b[ 0 ], b[ 1 ],     0 ];
 
 
 // ==========================================================================
@@ -119,7 +124,7 @@ module rounded_peg( size, fn = 10 ){
 // ==========================================================================
 
 // a rectangle with rounded corners
-module rounded_rectangle( size, rounding ){
+module rounded_rectangle( size, rounding = 1 ){
     x = size[ 0 ];
     y = size[ 1 ];
     r = rounding;
@@ -133,7 +138,7 @@ module rounded_rectangle( size, rounding ){
     }    
 }
 
-module cutter_bar( size, rounding ){
+module cutter_bar( size, rounding = 1 ){
     translate( [ -1000, size, size ] )
     mirror( [ 0, 1, 0 ] ) 
     rotate( [ 0, 90, 0 ] ) 
@@ -144,7 +149,7 @@ module cutter_bar( size, rounding ){
    };
 }
 
-module rounded_plate( size, height, rounding ){
+module rounded_plate( size, height, rounding = 1 ){
    difference(){
       linear_extrude( height ) 
          rounded_rectangle( size, rounding );
@@ -257,6 +262,7 @@ module m_nut_recess( m ){
 // ==========================================================================
 
 pcb_7_5 = [ 70.0, 50.0, 1.6, 1.6, 2.0, 2.0 ];
+pcb_7_3 = [ 70.0, 30.0, 1.6, 1.6, 2.0, 2.0 ];
 pcb_6_4 = [ 60.0, 40.0, 1.6, 1.6, 2.0, 2.0 ];
 
 function pcb_size( x )          = [ x[ 0 ], x[ 1 ] ];
@@ -271,7 +277,7 @@ function pcb_hole_offset( x )   = [ x[ 4 ], x[ 5 ] ];
 //
 // ==========================================================================
 
-version_size = 2;
+version_size = 2.5;
 
 module text_line( t ){
    text( 
@@ -290,11 +296,71 @@ module text2( x ){
 
 // ==========================================================================
 //
-// test
+// LCD and OLED cutout and supports
+//
+// position = [ x, y, x ]
+//    x, y = relative from lower-left corner
+//    z    = height == thickness of the plate
 //
 // ==========================================================================
 
+module lcd_5510_full_cutout( position ){
+   union(){
+   
+      // support distance squares and pegs
+      translate( position + [ 2.0, 2.0, 0.0 ] )
+	     repeat4( [ 40.0, 39.0 ] )
+            union(){
+	           rounded_peg( [ 2.0 / 2, 4.0 ] );
+               linear_extrude( 2 )
+                  square( dup2( 4 ), center = true );
+            };
+
+      difference(){	  
+	  
+	     // the base plate 
+	     children();
+		 
+		 // the cutout of the baseplate
+   	     translate( zero3_z( position + [ 1.0, 4.5, 0 ] ))
+	        linear_extrude( position[ 2 ] )
+               square( [ 42.0, 34.0 ] );
+			   
+         // room for the LCD itself
+	     translate( position )
+	        linear_extrude(30.0 )
+               square( [ 44.0, 43.0 ] );
+      };
+   };      
+}
+
+module oled_128_64_glass_cutout( position ){
+   difference(){
+      union(){
+         children();
+         translate( position + [ 2.0, 2.0 ] )
+	        repeat4( [ 22.5, 23.0 ] )
+               union(){
+	              rounded_peg( [ 3.0 / 2, 5.0 ] );
+                  linear_extrude( 2 )
+                     square( [ 4.0, 4.0 ], center = true );
+               };
+      };
+	  translate( position + [ 0.0, 4.0, -10 ] )
+	     linear_extrude( 20 )
+            square( [ 26.5, 15.0 ] );
+   };			
+}
+
+
+// ==========================================================================
+//
+// test
+//
+// ==========================================================================
+// text2( [ "hello", "world" ] );
 // hu_logo();
 // rounded_peg( [ 5, 10 ] );
 // cutter_bar( 1, 1 );
 // rounded_plate( [ 10, 20 ], 1, 1 );
+//lcd_5510_full_cutout( dup3( 1 )) rounded_plate( dup2( 80 ), 1.0 );
