@@ -94,7 +94,7 @@ screw                    = m3();
 
 // the breadboard
 // tested with pcb_7_5, pcb_7_3, and pcb_6_4
-breadboard               = pcb_7_5;
+breadboard               = pcb_6_4;
 
 // solder side required free height 
 // = clearance between breadboard PCB and bottom plate
@@ -299,7 +299,19 @@ module blue_base( height ){
 //
 // ==========================================================================
 
+module cutout( position, size ){
+   difference(){ 
+      children();
+      translate( position )
+         linear_extrude( size[ 2 ] )
+            square( [ size[ 0 ], size[ 1 ] ] );
+   };    
+}
+
 module blue_bottom(){
+    
+   // programming connector 
+   cutout( [ outer_size[ 0 ] - wall_thickness, wall_thickness + 32.0, 5.0 ], [ wall_thickness, 10.0, 5.0 ] )    
      
    difference(){ 
       union(){
@@ -369,10 +381,29 @@ module blue_bottom(){
 //
 // ==========================================================================
 
+module repeat( n, step ){
+   for( i = [ 0 : n - 1 ] )
+      translate( i * step )       
+         children();    
+}
+
+module hole_row( position, n, step, diameter ){
+   difference(){
+      children();
+      translate( position )
+         linear_extrude( wall_thickness )
+            repeat( n, step )
+               my_circle( diameter / 2 );
+   };       
+}
+
 module blue_top(){  
 
    // requires inner_height ~= 20.0
    lcd_5510_full_cutout( [ 9.0, 24.8, wall_thickness ] )  
+    
+   // 7 LEDs
+   hole_row( [ 6.5, 77 ],  7,  [ 7.68, 0 ], 5.5 )
      
    difference(){  
       union(){
