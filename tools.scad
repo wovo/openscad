@@ -277,18 +277,18 @@ function pcb_hole_offset( x )   = [ x[ 4 ], x[ 5 ] ];
 //
 // ==========================================================================
 
-version_size = 2.5;
+text_size = 4.0;
 
 module text_line( t ){
    text( 
-      t, size = version_size, font = "Liberation Sans", 
+      t, size = text_size, font = "Liberation Sans", 
       halign = "center", valign = "center", $fn = circle_sides );
 }
 
 module text2( x ){
-   union() translate( [ 0, - version_size ] ){
+   union() translate( [ 0, - text_size ] ){
       text_line( x[ 0 ] );
-	  translate( [ 0, 2 * version_size ] )
+	  translate( [ 0, 2 * text_size ] )
 	     text_line( x[ 1 ] );
    };
 }
@@ -311,7 +311,7 @@ module lcd_5510_full_cutout( position ){
       translate( position + [ 2.0, 2.0, 0.0 ] )
 	     repeat4( [ 40.0, 39.0 ] )
             union(){
-	           rounded_peg( [ 2.0 / 2, 4.0 ] );
+	           rounded_peg( [ 2.5 / 2, 4.0 ] );
                linear_extrude( 2 )
                   square( dup2( 4 ), center = true );
             };
@@ -324,12 +324,12 @@ module lcd_5510_full_cutout( position ){
 		 // the cutout of the baseplate
    	     translate( zero3_z( position + [ 1.0, 4.5, 0 ] ))
 	        linear_extrude( position[ 2 ] )
-               square( [ 42.0, 34.0 ] );
+               square( [ 42.0, 35.0 ] );
 			   
          // room for the LCD itself
 	     translate( position )
-	        linear_extrude(30.0 )
-               square( [ 44.0, 43.0 ] );
+	        linear_extrude( 30.0 )
+               square( [ 45.0, 43.0 ] );
       };
    };      
 }
@@ -363,4 +363,4 @@ module oled_128_64_glass_cutout( position ){
 // rounded_peg( [ 5, 10 ] );
 // cutter_bar( 1, 1 );
 // rounded_plate( [ 10, 20 ], 1, 1 );
-//lcd_5510_full_cutout( dup3( 1 )) rounded_plate( dup2( 80 ), 1.0 );
+// lcd_5510_full_cutout( dup3( 1 )) rounded_plate( dup2( 80 ), 1.0 );

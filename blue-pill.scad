@@ -26,22 +26,37 @@
 // - buzzer hole
 // - 4 led holes
 // - battery hold-down
+// - notches in the battery compartment
+//
+// pcb holddons moeten + 0.5, waarom?
 //
 // remember:
 // - set circle_sides to 10 for draft, 40 for print
 // - in cura use
 //    - profile: normal 
 //    - 50% filling
-//    - enable support (for the nut recesses)
+//    - enable support (for the nut recesses) - seems to be unnessecary??
 //    - no build plate adhesion
-//    - manually lower the temperature to 190C
+//    - manually lower the temperature to 190C (no??)
+//
+// version 0.4
+// - larger hole for bb peg
+// - prog hole wider
+// - text 2.5 => 4.0
+// - lcd smaller 0.4 + 0.4, 0.4 lager, 0.4 naar rechts
+// - lcd pegs +0.4 diameter
+// - bodem weer afgerond
+// - bottom 1.0 hoger
+// - total height == 22 voor LCD
+// - battery pegs 2.5 => 2.7
+// - LEDs [ - 4.0, + 4.0 ]
 // 
 // ==========================================================================
 
 // identification, put inside top and bottom
 id_text                  = [
-   "blue-pill.scad v 0.2",
-   "www.github.com/wovo/openscad" ]; 
+   "blue-pill.scad v 0.4",
+   "github: wovo/openscad" ]; 
 
 // circle and ball accuracy
 // this affects the rendering time a lot!
@@ -67,7 +82,7 @@ include <tools.scad>;
 // ==========================================================================
 
 // total outsize height of housing (bottom + top)
-total_height             = 16.0;
+total_height             = 22.0;
 
 // thickness of the external walls (and floors)
 // this has a big impact on printing time and material consumption!
@@ -75,7 +90,7 @@ total_height             = 16.0;
 // 1.0 is still a bit fragile
 // 1.2 is sturdier 
 // 2.0 is realy stiff
-wall_thickness           = 0.6;
+wall_thickness           = 0.8;
 
 // same as external wall is a good start, 
 // but it could be a bit thinner
@@ -90,7 +105,7 @@ pcb_bb_gap               = 0.5;
 battery_gap              = 0.2;
 
 // the screw used to fasten top to bottom
-screw                    = m3();
+screw                    = m3( 20.0 );
 
 // the breadboard
 // tested with pcb_7_5, pcb_7_3, and pcb_6_4
@@ -140,11 +155,11 @@ pcb_blue_thickness       = 1.0;
 notch_size               = [ 7.0, 7.0 ];
 screw_offset             = [ 3.2, 3.5 ];
 
-pcb_bb_size             = pcb_size( breadboard );
-pcb_bb_thickness        = pcb_thickness( breadboard );
-pcb_bb_hole_clearance   = pcb_hole_offset( breadboard )[ 0 ];
-pcb_bb_hole_diameter    = pcb_hole_diameter( breadboard );
-pcb_bb_support_size     = 2 * pcb_bb_hole_clearance;
+pcb_bb_size              = pcb_size( breadboard );
+pcb_bb_thickness         = pcb_thickness( breadboard );
+pcb_bb_hole_clearance    = pcb_hole_offset( breadboard )[ 0 ];
+pcb_bb_hole_diameter     = pcb_hole_diameter( breadboard );
+pcb_bb_support_size      = 2 * pcb_bb_hole_clearance;
 
 battery_size             = [ 51.0, 24.5 ];
 battery_height           = 12.0;
@@ -174,7 +189,7 @@ bottom_height        = wall_thickness
                           + solder_height
                           + pcb_blue_thickness
                           + 2.5 // for the switch cutout
-						  + 3.0;
+						  + 4.0;
                           
 top_height           = total_height - bottom_height;
 
@@ -202,7 +217,7 @@ screw_origin         = notch_origin + screw_offset;
 
 screw_to_side        = screw_offset[ 0 ];
 
-pcb_bb_origin       = notch_origin + [ 0,
+pcb_bb_origin        = notch_origin + [ 0,
                             notch_size[ 1 ] + pcb_bb_gap ];
                             
 power_switch_cutout  = [ [ wall_thickness, 8.0, 3.5 ], 
@@ -230,16 +245,16 @@ module blue_base( height ){
        union(){    
     
          // plate bottom    
-         rounded_plate( outer_size, wall_thickness, rounding_factor );
+         // linear_extrude( wall_thickness ) 
+            rounded_plate( outer_size, wall_thickness, rounding_factor );
    
          // side walls    
          translate( [ 0, 0, wall_thickness ] ) 
             linear_extrude( height - wall_thickness ) 
                difference() {
-                  rounded_rectangle( outer_size, rounding_factor );
-               translate( inner_origin ) 
-                  square( inner_size );  
-            }; 
+                  rounded_rectangle( outer_size, wall_thickness, rounding_factor );
+                  translate( inner_origin ) square( inner_size );  
+               }; 
    
          // battery wall
          linear_extrude( height )
@@ -263,7 +278,7 @@ module blue_base( height ){
 				     + wall_thickness );
 
          // id text embossed
-         *translate( 
+         translate( 
             [ outer_size[ 0 ] / 2, 
             ( battery_origin + battery_size / 2 )[ 1 ],
             wall_thickness ] 
@@ -281,7 +296,7 @@ module blue_base( height ){
                   my_circle( m_hole_diameter( screw )  / 2 );   
           
          // id text engraved
-         translate( 
+         *translate( 
             [ outer_size[ 0 ] / 2, 
             ( battery_origin + battery_size / 2 )[ 1 ],
             wall_thickness - text_engraving ] 
@@ -311,7 +326,7 @@ module cutout( position, size ){
 module blue_bottom(){
     
    // programming connector 
-   cutout( [ outer_size[ 0 ] - wall_thickness, wall_thickness + 32.0, 5.0 ], [ wall_thickness, 10.0, 5.0 ] )    
+   cutout( [ outer_size[ 0 ] - wall_thickness, wall_thickness + 31.5, 2.8 ], [ wall_thickness, 11.0, 5.0 ] )    
      
    difference(){ 
       union(){
@@ -330,14 +345,14 @@ module blue_bottom(){
 			      pcb_bb_origin + dup2( pcb_bb_hole_clearance )
 			   )
                   rounded_peg( [ 
-                     pcb_bb_hole_diameter / 2 + 2 * fitting_gap,
+                     pcb_bb_hole_diameter / 2,
                      pin_height ] ); 
          };
          
          // blue pill support ridge
          linear_extrude( solder_height )
             translate( pcb_blue_origin )
-               square( [ inner_size[ 0 ], 2.0 ] )
+               square( [ inner_size[ 0 ], 2.0 ] );
 		 
 		 // battery holder fixation pins
 		 translate( [
@@ -345,7 +360,7 @@ module blue_bottom(){
             ( battery_origin + battery_size / 2 )[ 1 ]
          ] )
 		    repeat_plusmin( [ 10.0, 0.0 ] )
-		       rounded_peg( [ 2.5 / 2, 3.0 ] );
+		       rounded_peg( [ 2.7 / 2, 3.0 ] );
          
       }; 
       
@@ -400,10 +415,10 @@ module hole_row( position, n, step, diameter ){
 module blue_top(){  
 
    // requires inner_height ~= 20.0
-   lcd_5510_full_cutout( [ 9.0, 24.8, wall_thickness ] )  
+   lcd_5510_full_cutout( [ 9.4, 24.4, wall_thickness ] )  
     
    // 7 LEDs
-   hole_row( [ 6.5, 77 ],  7,  [ 7.68, 0 ], 5.5 )
+   // hole_row( [ 6.1, 77.4 ],  7,  [ 7.68, 0 ], 5.5 )
      
    difference(){  
       union(){
@@ -411,7 +426,7 @@ module blue_top(){
          // bottom and walls    
          blue_base( top_height );
           
-         // bb PCB hold-downs
+         // bb PCB hold-downs 
          difference(){ 
             linear_extrude( wall_thickness + hold_down_height )  
                translate( pcb_bb_origin )
@@ -421,7 +436,7 @@ module blue_top(){
                linear_extrude( hold_down_height ) 
                   translate( pcb_bb_origin + dup2( pcb_bb_hole_clearance ))
                      repeat4( pin_square )  
-                        my_circle( pcb_bb_hole_diameter / 2 ); 
+                        my_circle( pcb_bb_hole_diameter / 2 + 0.5 ); 
          };           
       };
 
