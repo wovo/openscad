@@ -262,6 +262,7 @@ module m_nut_recess( m ){
 // ==========================================================================
 
 pcb_7_5 = [ 70.0, 50.0, 1.6, 1.6, 2.0, 2.0 ];
+pcb_5_7 = [ 50.0, 70.0, 1.6, 1.6, 2.0, 2.0 ];
 pcb_7_3 = [ 70.0, 30.0, 1.6, 1.6, 2.0, 2.0 ];
 pcb_6_4 = [ 60.0, 40.0, 1.6, 1.6, 2.0, 2.0 ];
 
@@ -270,6 +271,56 @@ function pcb_thickness( x )     = x[ 2 ];
 function pcb_hole_diameter( x ) = x[ 3 ];
 function pcb_hole_offset( x )   = [ x[ 4 ], x[ 5 ] ];
 
+function pcb_hole_square( pcb ) = 
+   pcb_size( pcb ) - 2 * pcb_hole_offset( pcb ); 
+
+module add_pcb_support( location, pcb, peg_height = 1.0 ){
+   translate( location )
+      repeat4( make3( pcb_hole_square( pcb ) ) )
+	     union(){
+            linear_extrude( location[ 2 ] )  
+               square( 2 * pcb_hole_offset( pcb ), center = true );
+		    rounded_peg( [ 
+               pcb_hole_diameter( pcb ) / 2,
+               location[ 2 ] + pcb_thickness( pcb ) + peg_height ] );  
+         }
+   children();               
+}
+
+module add_pcb_holddown( location, pcb, peg_depth = 1.5 ){
+   translate( location )
+      repeat4( make3( pcb_hole_square( pcb ) ) )
+         difference(){
+            linear_extrude( location[ 2 ] )  
+               square( 2 * pcb_hole_offset( pcb ), center = true );
+            translate( [ 0, 0, location[ 2 ] - peg_depth ] )
+               linear_extrude( peg_depth ) 
+                   my_circle( pcb_bb_hole_diameter / 2 + 0.5 ); 
+         }    
+   children();          
+}    
+
+module add_pcb( bottom, location, pcb, peg_height = 1.0 ){
+   if( bottom )
+      add_pcb_support( location, pcb, peg_height )
+         children();   
+   else
+      add_pcb_holddown( location, pcb, peg_height + 1.0 );
+         children();
+}   
+
+// ==========================================================================
+//
+// Arduino + switch on a 5 x 7 breadboard
+//
+// ==========================================================================
+    
+module add_pcb_5_7_nano( position, peg_height = 1.0 ){
+   add_pcb_holddown( position, pcb_5_7,     
+};
+
+add_pcb_holddown( [ 5.0, 5.0, 4.0 ], pcb_5_7 )
+   sphere( 1.0 );
 
 // ==========================================================================
 //
@@ -291,7 +342,38 @@ module text2( x ){
 	  translate( [ 0, 2 * text_size ] )
 	     text_line( x[ 1 ] );
    };
-}
+} 
+
+
+// ==========================================================================
+//
+// battery holder
+//
+// ==========================================================================
+
+module battery_2aaa( wall_thickness, height, text ){
+   union(){
+      square( [] );
+   };
+}  
+
+
+// ==========================================================================
+//
+// Arduino nano on 5x7 pcb with switch cutout
+//
+// ==========================================================================
+
+module battery_2aaa( location ){
+   difference(){
+      union(){
+         square( [] );
+	     children();
+      };
+      // switch cutout
+   }   
+}  
+
 
 
 // ==========================================================================
@@ -309,7 +391,7 @@ module lcd_5510_full_cutout( position ){
    
       // support distance squares and pegs
       translate( position + [ 2.0, 2.0, 0.0 ] )
-	     repeat4( [ 40.0, 39.0 ] )
+	     repeat4( [ 40.0, 40.0 ] )
             union(){
 	           rounded_peg( [ 2.5 / 2, 4.0 ] );
                linear_extrude( 2 )
@@ -327,9 +409,9 @@ module lcd_5510_full_cutout( position ){
                square( [ 42.0, 35.0 ] );
 			   
          // room for the LCD itself
-	     translate( position )
+	     translate( position - [ 1.0, 0.0, 0.0 ] )
 	        linear_extrude( 30.0 )
-               square( [ 45.0, 43.0 ] );
+               square( [ 46.0, 43.0 ] );
       };
    };      
 }

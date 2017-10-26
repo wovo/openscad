@@ -50,12 +50,29 @@
 // - total height == 22 voor LCD
 // - battery pegs 2.5 => 2.7
 // - LEDs [ - 4.0, + 4.0 ]
+//
+// 24-10 rechtsboven heeft slecht gehecht
+// - blue area moet y + 0.5 mm
+// - prog cutout zit niet goed
+// - PCB hiolddown moet + 0.5 mm
+// - support richel zit niet vast aan batterij afscheider
+// - text te hoog
+// - probeer alngzamer te printen
+// - swich gap moet 0.5 mm omhoog
+//
+// version 0.5
+// - switch hoogte 3.5 => 4.0
+// - pcb blue gap 0.2 => 0.8
+// - prog cutout y-org + 1 size x 2 x + 0.5
+// - text engraved
+// - LCD x-org + 0.5, notch y + 0.8
+// - ingesteld op fine
 // 
 // ==========================================================================
 
 // identification, put inside top and bottom
 id_text                  = [
-   "blue-pill.scad v 0.4",
+   "blue-pill.scad v 0.5",
    "github: wovo/openscad" ]; 
 
 // circle and ball accuracy
@@ -100,7 +117,7 @@ battery_wall             = min( wall_thickness, 0.6 );
 // horizontal gap between PCB and (inner) walls
 // 0.5 can give some rattling when the PCB is not secured
 // 0.0 is probably too tight (I never tried)
-pcb_blue_gap             = 0.2;
+pcb_blue_gap             = 0.8;
 pcb_bb_gap               = 0.5;
 battery_gap              = 0.2;
 
@@ -165,7 +182,7 @@ battery_size             = [ 51.0, 24.5 ];
 battery_height           = 12.0;
 battery_wires_gap        = [ 2.0, battery_wall, 6.0 ];
 
-magnets_diameter         = 20.0;
+magnets_diameter         = 21.0;
 magnets_distance         = [ 5.0, 10.0 ];
 magnets_cutout           = 0.4;
 
@@ -220,12 +237,12 @@ screw_to_side        = screw_offset[ 0 ];
 pcb_bb_origin        = notch_origin + [ 0,
                             notch_size[ 1 ] + pcb_bb_gap ];
                             
-power_switch_cutout  = [ [ wall_thickness, 8.0, 3.5 ], 
+power_switch_cutout  = [ [ wall_thickness, 8.0, 4.0 ], 
                          make3( zero2_x( pcb_bb_origin ))
-                            + [ 0, 10, 7.5 ]];
+                            + [ 0, 10.0, 7.5 ]];
 
 support_height       = wall_thickness + solder_height;
-pin_height           = support_height + pcb_bb_thickness + 2.0; 
+pin_height           = support_height + pcb_bb_thickness + 1.0; 
 pin_square           = pcb_bb_size - dup2( 2 * pcb_bb_hole_clearance ); 
 hold_down_height     = total_height
                           - 2 * wall_thickness 
@@ -246,7 +263,7 @@ module blue_base( height ){
     
          // plate bottom    
          // linear_extrude( wall_thickness ) 
-            rounded_plate( outer_size, wall_thickness, rounding_factor );
+         rounded_plate( outer_size, wall_thickness, rounding_factor );
    
          // side walls    
          translate( [ 0, 0, wall_thickness ] ) 
@@ -278,7 +295,7 @@ module blue_base( height ){
 				     + wall_thickness );
 
          // id text embossed
-         translate( 
+         *translate( 
             [ outer_size[ 0 ] / 2, 
             ( battery_origin + battery_size / 2 )[ 1 ],
             wall_thickness ] 
@@ -296,7 +313,7 @@ module blue_base( height ){
                   my_circle( m_hole_diameter( screw )  / 2 );   
           
          // id text engraved
-         *translate( 
+         translate( 
             [ outer_size[ 0 ] / 2, 
             ( battery_origin + battery_size / 2 )[ 1 ],
             wall_thickness - text_engraving ] 
@@ -323,11 +340,48 @@ module cutout( position, size ){
    };    
 }
 
+module magnets(){
+   difference (){
+      union(){
+         children();    
+       
+         // rim
+      translate( [ 
+          outer_size[ 0 ] / 2, 
+          outer_size[ 1 ] - magnets_diameter / 2 - magnets_distance[ 1 ], 
+          wall_thickness - magnets_cutout 
+      ] )          
+         linear_extrude( 1.0 ) 
+            repeat_plusmin( 
+			   [ magnets_diameter / 2 + magnets_distance[ 0 ], 0 ] 
+			)         
+               difference(){
+                  my_circle( magnets_diameter / 2 + 0.7 ); 
+                  my_circle( magnets_diameter / 2 );
+               }   
+      }    
+    
+      // cutout
+      translate( [ 
+          outer_size[ 0 ] / 2, 
+          outer_size[ 1 ] - magnets_diameter / 2 - magnets_distance[ 1 ], 
+          wall_thickness - magnets_cutout 
+      ] )
+         linear_extrude( wall_thickness )
+            repeat_plusmin( 
+			   [ magnets_diameter / 2 + magnets_distance[ 0 ], 0 ] 
+			)
+               my_circle( magnets_diameter / 2 );        
+  }      
+}
+
 module blue_bottom(){
     
    // programming connector 
-   cutout( [ outer_size[ 0 ] - wall_thickness, wall_thickness + 31.5, 2.8 ], [ wall_thickness, 11.0, 5.0 ] )    
+   cutout( [ outer_size[ 0 ] - wall_thickness, wall_thickness + 31.0, 2.5 ], [ wall_thickness, 12.0, 5.0 ] )    
      
+   magnets()
+    
    difference(){ 
       union(){
           
@@ -351,8 +405,8 @@ module blue_bottom(){
          
          // blue pill support ridge
          linear_extrude( solder_height )
-            translate( pcb_blue_origin )
-               square( [ inner_size[ 0 ], 2.0 ] );
+            translate( battery_wall_origin )
+               square( [ inner_size[ 0 ], 2.5 ] );
 		 
 		 // battery holder fixation pins
 		 translate( [
@@ -369,18 +423,6 @@ module blue_bottom(){
          translate( screw_origin )
 		    rotate( [ 0, 0, 90 ] )
                m_nut_recess( screw );  
-      
-      // magnet cutout
-      translate( [ 
-          outer_size[ 0 ] / 2, 
-          outer_size[ 1 ] - magnets_diameter / 2 - magnets_distance[ 1 ], 
-          wall_thickness - magnets_cutout 
-      ] )
-         linear_extrude( wall_thickness )
-            repeat_plusmin( 
-			   [ magnets_diameter / 2 + magnets_distance[ 0 ], 0 ] 
-			)
-               my_circle( magnets_diameter / 2 );
 
       // cut-outs  
       box( battery_wires_cutout ); 
