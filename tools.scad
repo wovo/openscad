@@ -174,6 +174,22 @@ module rounded_outline( size, rounding, thickness ){
     }        
 }
 
+// ==========================================================================
+//
+// The add_* modules add an item to a duplex (bottom/top) casing.
+//
+// An item can be an interal part, or a cutout, or acombination.
+//
+// arguments:
+//    bottom   = true for the bottom part, false for the top
+//    location = [ x, y, z ] origin of the item to be added
+//    height   = [ lower, upper ] inner height of the two parts
+//    ....     =  item specific parameters
+// children    = the part the item is added to
+//
+// ==========================================================================
+
+
 
 // ==========================================================================
 //
@@ -182,7 +198,7 @@ module rounded_outline( size, rounding, thickness ){
 // ==========================================================================
 
 // HU-logo
-module hu_logo(){
+module add_logo_hu(){
    union(){
       translate( [  0,  2, 0 ] ) square( [ 5, 29 ] );
       translate( [ 10,  2, 0 ] ) square( [ 5, 12 ] );
@@ -273,53 +289,55 @@ function pcb_hole_offset( x )   = [ x[ 4 ], x[ 5 ] ];
 
 function pcb_hole_square( pcb ) = 
    pcb_size( pcb ) - 2 * pcb_hole_offset( pcb ); 
+   
+   
+// ==========================================================================
+//
+// pcb        = one of the pcb_x_y's
+// peg_height = height of the pegs for the pcb holes (above the pcb)
+//
+// ==========================================================================
 
-module add_pcb_support( location, pcb, peg_height = 1.0 ){
-   translate( location )
-      repeat4( make3( pcb_hole_square( pcb ) ) )
-	     union(){
-            linear_extrude( location[ 2 ] )  
-               square( 2 * pcb_hole_offset( pcb ), center = true );
-		    rounded_peg( [ 
-               pcb_hole_diameter( pcb ) / 2,
-               location[ 2 ] + pcb_thickness( pcb ) + peg_height ] );  
+module add_pcb( bottom, location, height, pcb, peg_height = 1.0 ){
+   translate( location ){
+      repeat4( make3( pcb_hole_square( pcb ) ) ){
+         if( bottom ){
+		    // peg
+	        union(){
+               linear_extrude( location[ 2 ] )  
+                  square( 2 * pcb_hole_offset( pcb ), center = true );
+		       rounded_peg( [ 
+                  pcb_hole_diameter( pcb ) / 2,
+                  location[ 2 ] + pcb_thickness( pcb ) + peg_height ] );  
+            }
+         } else {
+		    // holddown
+            peg_depth = sum( height ) +  
+            difference(){
+               linear_extrude( location[ 2 ] )  
+                  square( 2 * pcb_hole_offset( pcb ), center = true );
+               translate( [ 0, 0, location[ 2 ] - peg_depth ] )
+                  linear_extrude( peg_depth ) 
+                     my_circle( pcb_bb_hole_diameter / 2 + 0.5 ); 
+            }					 
          }
-   children();               
-}
+      }		 
+   }	  
+   children();   
+} 
 
-module add_pcb_holddown( location, pcb, peg_depth = 1.5 ){
-   translate( location )
-      repeat4( make3( pcb_hole_square( pcb ) ) )
-         difference(){
-            linear_extrude( location[ 2 ] )  
-               square( 2 * pcb_hole_offset( pcb ), center = true );
-            translate( [ 0, 0, location[ 2 ] - peg_depth ] )
-               linear_extrude( peg_depth ) 
-                   my_circle( pcb_bb_hole_diameter / 2 + 0.5 ); 
-         }    
-   children();          
-}    
-
-module add_pcb( bottom, location, pcb, peg_height = 1.0 ){
-   if( bottom )
-      add_pcb_support( location, pcb, peg_height )
-         children();   
-   else
-      add_pcb_holddown( location, pcb, peg_height + 1.0 );
-         children();
-}   
 
 // ==========================================================================
 //
-// Arduino + switch on a 5 x 7 breadboard
+// Arduino + switch on a breadboard
 //
 // ==========================================================================
     
 module add_pcb_5_7_nano( position, peg_height = 1.0 ){
-   add_pcb_holddown( position, pcb_5_7,     
+   // add_pcb_holddown( position, pcb_5_7,     
 };
 
-add_pcb_holddown( [ 5.0, 5.0, 4.0 ], pcb_5_7 )
+add_pcb( 0, [ 5.0, 5.0, 4.0 ], [ 10, 10 ], pcb_5_7 )
    sphere( 1.0 );
 
 // ==========================================================================

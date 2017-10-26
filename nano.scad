@@ -1,75 +1,30 @@
 // ==========================================================================
 //
 // two-part housing, containing
-//    - blue-pill STM32F103C8 
+//    - arduino nano, on a
 //    - 50 x 70 sea-of-holes prototype PCB
 //    - 2 x AAA battery holder
 //    - slider switch
-//    - two sunken m3 hex nuts + two normal M3 screws
+//    - four sunken m3 hex nuts + two normal M3 screws
 //
 // author         :  Wouter van Ooijen
 // email          :  wouter@voti.nl
-// last modified  :  2017-10-19
+// last modified  :  2017-10-25
 //
 // todo:
-// - pcb holddowns are too low, why?
-//
-// - specify screw length -> calculate front sink
-// - screw height (top recess and cutout)
-// - notches for PCB are too low??
-// - 'spread' cutouts over top and bottom
-// - notches in battery compartment
-// - pcb notches are not attached to the walls
-// 
-// - picture of explosion
-// - IR hole
-// - buzzer hole
-// - 4 led holes
-// - battery hold-down
-// - notches in the battery compartment
-// - rim aeound the magnets
-// - shift battery to the right
-//
-// pcb holddons moeten + 0.5, waarom?
-//
-// remember:
-// - set circle_sides to 10 for draft, 40 for print
-// - in cura use
-//    - profile: normal 
-//    - 50% filling
-//    - enable support (for the nut recesses) - seems to be unnessecary??
-//    - no build plate adhesion
-//    - manually lower the temperature to 190C (no??)
-//
-// version 0.4
-// - larger hole for bb peg
-// - prog hole wider
-// - text 2.5 => 4.0
-// - lcd smaller 0.4 + 0.4, 0.4 lager, 0.4 naar rechts
-// - lcd pegs +0.4 diameter
-// - bodem weer afgerond
-// - bottom 1.0 hoger
-// - total height == 22 voor LCD
-// - battery pegs 2.5 => 2.7
-// - LEDs [ - 4.0, + 4.0 ]
+// - something
 // 
 // ==========================================================================
 
 // identification, put inside top and bottom
 id_text                  = [
-   "blue-pill.scad v 0.4",
+   "nano.scad v 0.1",
    "github: wovo/openscad" ]; 
 
 // circle and ball accuracy
 // this affects the rendering time a lot!
 // 20 (or even 10) is enough for drafts, 40 is high-quality
 circle_sides             = 40;
-
-// gap when comonents must fit inside one another
-// (like printed peg and hole, or a printed peg inside a PCB hole)
-// this depends on the printer accuracy
-// 0.1 seems to be OK for the Ultimaker 2+
-fitting_gap              = 0.1;
 
 // the horizontal gap on the hotplate when multiple items are printed
 hotplate_gap             = 2.0; 
@@ -92,26 +47,19 @@ total_height             = 22.0;
 // 1.0 is still a bit fragile
 // 1.2 is sturdier 
 // 2.0 is realy stiff
-wall_thickness           = 0.8;
+wall_thickness           = 1.0;
 
 // same as external wall is a good start, 
 // but it could be a bit thinner
 // 0.4 is not printed in the Ultimaker 2+ default settings, 0.6 is
 battery_wall             = min( wall_thickness, 0.6 );
 
-// horizontal gap between PCB and (inner) walls
-// 0.5 can give some rattling when the PCB is not secured
-// 0.0 is probably too tight (I never tried)
-pcb_blue_gap             = 0.2;
-pcb_bb_gap               = 0.5;
-battery_gap              = 0.2;
-
 // the screw used to fasten top to bottom
-screw                    = m3( 20.0 );
+screws                   = m3( 20.0 );
 
 // the breadboard
 // tested with pcb_7_5, pcb_7_3, and pcb_6_4
-breadboard               = pcb_6_4;
+breadboard               = pcb_5_7;
 
 // solder side required free height 
 // = clearance between breadboard PCB and bottom plate
