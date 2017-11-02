@@ -386,10 +386,10 @@ module case_tray( case, part, ridges = 0 ){
    translate( [ - case_thickness( case ), - case_thickness( case ), 0 ] )
       tray( 
          [ 
-            case_inner_x_size( case ), 
-            case_inner_y_size ( case ), 
+            case_inner_x_size( case ) + 2 * case_thickness( case ), 
+            case_inner_y_size ( case ) + 2 * case_thickness( case ), 
             case_part_inner_z_size( case, part )
-         ] + dup3( case_thickness( case )),
+         ], 
          case_thickness( case ),
          case_rounding( case ),
 		 ridges
@@ -397,11 +397,11 @@ module case_tray( case, part, ridges = 0 ){
 }
 
 module test_case_tray(){
-   tray = [ 50.0, 100.0, 10.0, 5.0, 1.0, 1.0 ];
+   tray = [ 50.0, 100.0, 1.0, 5.0, 1.0, 1.0 ];
    case_tray( tray, bottom );    
 }
 
-// test_case_tray();
+//test_case_tray();
 
 
 // ==========================================================================
@@ -765,6 +765,76 @@ module add_text2( case, part, location, x ){
   }      
 } 
 
+// ==========================================================================
+//
+// LCD and OLED 
+//
+// position = [ x, y, z ]
+//    x, y = relative from lower-left corner
+//    z is ignored but must be present
+//
+// ==========================================================================
+
+// location == PCB corner
+module add_lcd_5510_full_cutout( case, part, location ){
+    
+   if( part == bottom ){   
+       
+      // add keepout?
+       
+   } else if ( part == top ){
+           
+      // support distance squares and pegs
+      translate( location + [ 2.0, 2.0, 0.0 ] )
+	     repeat4( [ 40.0, 40.0 ] )
+            union(){
+	           peg( [ 2.5 / 2, 4.0 ], rounding = 1 );
+               linear_extrude( 2 )
+                  square( dup2( 4 ), center = true );
+            };
+            
+      // snap-ins
+      translate( location + [ -2.0, 20.0, 0.0 ] )            
+         repeat2( [ 48.0, 0.0, 0.0 ], [ 1, 0, 0 ] )
+            union(){
+               linear_extrude( 6.0 )  
+                  square( [ 1.5, 4 ] );                
+               translate( [ 1.5, 2.0, 4.5 ] )
+                  my_sphere( 1.5 ); 
+            }      
+
+      difference(){	  
+          
+	     children();
+          
+		 // frontplate cutout
+   	     translate( 
+             zero3_z( location ) 
+             + [ 1.2, 4.2, - case_thickness( case ) ]
+          )
+	        linear_extrude( case_thickness( case ) )
+               square( [ 40.5, 34.5 ] );          
+			   
+         // room for the LCD itself
+	     translate( 
+            zero3_z( location )  
+            - [ 1.0, 1.0, 0.0 ] 
+         )
+	        linear_extrude( 20.0 )
+               square( [ 46.0, 46.0 ] );
+      };
+   };      
+}
+
+module test_add_lcd_5510_full_cutout( part ){
+   case      = [ 54.0, 51.0, 0.0, 1.0, 1.0, 1.0, 1.0 ];
+    
+   add_lcd_5510_full_cutout( case, part, [ 5.0, 3.0, 1.0 ] )
+   case_tray( case, part, ridges = 3, rounding = 1 );
+}    
+
+test_add_lcd_5510_full_cutout( top );
+
 
 // ==========================================================================
 //
@@ -783,6 +853,7 @@ module test_blue_pill_one( part ){
    add_screw( case, part, [  3.0, 50.0, 0.0 ], screw )  
    add_screw( case, part, [ 57.0, 50.0, 0.0 ], screw )  
    add_pcb_slider_switch( part, case, pcb, pcb_6_4, 0 )  
+   add_add_lcd_5510_full_cutou( case, part, [ 20.0, 40.0, 0 ] )    
    add_pcb( case, part, pcb, pcb_6_4 )    
    add_blue_pill( case, part, blue_pill ) 
    add_battery_compartment_2a3( case, part, [ 4.0, 0.0 ] )   
@@ -790,7 +861,7 @@ module test_blue_pill_one( part ){
    case_tray( case, part, ridges = 0 );    
 }
 
-test_blue_pill_one( bottom ); translate( [ -70.0, 0, 0 ] ) test_blue_pill_one( top );
+//test_blue_pill_one( bottom ); translate( [ -70.0, 0, 0 ] ) test_blue_pill_one( top );
 
 
 // ==========================================================================
@@ -827,7 +898,7 @@ module text2( x ){
 // ==========================================================================
 
 // location == PCB corner
-module add_lcd_5510_full_cutout( part, location, height ){
+module xadd_lcd_5510_full_cutout( part, location, height ){
    if( part == bottom ){    
       // add cutout
    } else if ( part == top ){
@@ -868,7 +939,7 @@ module add_lcd_5510_full_cutout( part, location, height ){
    };      
 }
 
-module test_add_lcd_5510_full_cutout(){
+module xtest_add_lcd_5510_full_cutout(){
    add_lcd_5510_full_cutout( top, [ 5.0, 3.0, 1.0 ], [ 0.0, 0.0 ] )
       plate( [ 54, 51, 1 ], ridges = 5, rounding = 1 );
 }    
