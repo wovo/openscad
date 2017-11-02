@@ -2,7 +2,7 @@
 //
 // author         : Wouter van Ooijen
 // email          : wouter@voti.nl
-// last modified  : 2017-10-29
+// last modified  : 2017-11-02
 // license        : CC BY-NC 4.0 
 //                  https://creativecommons.org/licenses/by-nc/4.0
 //                  https://creativecommons.org/licenses/by-nc/4.0/legalcode
@@ -23,6 +23,7 @@
 //    - Nokia 5510 84x48 b/w LCD
 //    - small 128x64 OLED 
 //    - engraved text
+//    - cutout/ridges for magnets
 // 
 // todo:
 // - repeat4 should rotate
@@ -248,7 +249,7 @@ module cutter_bar( size, rounding = 1 ){
 // ridges can be added for strength or to debug keepout spaces
 // the plate is just below the x,y plane, 
 // for easy placement of other elements
-module plate( size, rounding = 0, ridges = 0 ){
+module plate( size, rounding = 0, ridges = 0 ){    
    translate( [ 0, 0, - size[ 2 ] ] ){
       if( rounding == 0 ){
          linear_extrude( size[ 2 ] )
@@ -311,8 +312,8 @@ module outline( size, thickness, rounding = 0 ){
 // size = [ x, y, z ] of the base plate
 // thickness is the wall thickness, can be omitted, defaults to size[ 2 ]
 // the bottom plate is below the x,y plane
-module tray( size, thickness = -1, rounding = 0, ridges = 0 ){
-   plate( make3( size, rounding ), rounding, ridges );
+module tray( size, thickness = -1, rounding = 0, ridges = 0 ){    
+   plate( make3( size, thickness ), rounding, ridges );
    linear_extrude( size[ 2 ] )
       outline( take2( size ), 
          thickness < 0 ? size[ 2 ] : thickness, 
@@ -765,13 +766,14 @@ module add_text2( case, part, location, x ){
   }      
 } 
 
+
 // ==========================================================================
 //
-// LCD and OLED 
+// Nokia 5510 LCD
 //
 // position = [ x, y, z ]
 //    x, y = relative from lower-left corner
-//    z is ignored but must be present
+//    z is ignored, but must be present
 //
 // ==========================================================================
 
@@ -781,6 +783,8 @@ module add_lcd_5510_full_cutout( case, part, location ){
    if( part == bottom ){   
        
       // add keepout?
+       
+       children();
        
    } else if ( part == top ){
            
@@ -794,14 +798,14 @@ module add_lcd_5510_full_cutout( case, part, location ){
             };
             
       // snap-ins
-      translate( zero3_z( location ) + [ -2.0, 20.0, 0.0 ] )            
+      translate( zero3_z( location ) + [ - 2.0, 20.0, 0.0 ] )            
          repeat2( [ 48.0, 0.0, 0.0 ], [ 1, 0, 0 ] )
             union(){
                linear_extrude( 6.0 )  
-                  square( [ 1.5, 4 ] );                
-               translate( [ 1.5, 2.0, 4.5 ] )
+                  square( [ 1.0, 4 ] );                
+               translate( [ 1.0, 2.0, 4.5 ] )
                   my_sphere( 1.5 ); 
-            }      
+            }              
 
       difference(){	  
           
@@ -822,6 +826,12 @@ module add_lcd_5510_full_cutout( case, part, location ){
          )
 	        linear_extrude( 20.0 )
                square( [ 46.0, 46.0 ] );
+          
+         // room for the snap-ins
+         translate( zero3_z( location ) + [ - 3.0, 19.0, 0.0 ] )            
+            repeat2( [ 50.0, 0.0, 0.0 ], [ 1, 0, 0 ] )
+               linear_extrude( 8.0 )  
+                  square( [ 4.0, 6 ] );             
       };
    };      
 }
@@ -833,7 +843,159 @@ module test_add_lcd_5510_full_cutout( part ){
    case_tray( case, part, ridges = 3, rounding = 1 );
 }    
 
-test_add_lcd_5510_full_cutout( top );
+//test_add_lcd_5510_full_cutout( top );
+
+
+// ==========================================================================
+//
+// OLED 
+//
+// position = [ x, y, z ]
+//    x, y = relative from lower-left corner
+//    z is ignored, but must be present
+//
+// ==========================================================================
+
+// location == PCB corner
+module add_oled_128_64_full_cutout( case, part, location ){
+    
+   if( part == bottom ){   
+       
+      // add keepout?
+       
+       children();
+       
+   } else if ( part == top ){
+           
+      // support distance squares and pegs
+      translate( zero3_z( location ) + [ 2.0, 2.0, 0.0 ] )
+	     repeat4( [ 22.5, 23.0 ] )
+            union(){
+	           peg( [ 2.5 / 2, 4.0 ], rounding = 1 );
+               linear_extrude( 2 )
+                  square( [ 4.0, 3.0 ], center = true );
+            };
+            
+      // snap-ins
+      translate( zero3_z( location ) + [ - 2.0, 12.0, 0.0 ] )            
+         repeat2( [ 30.5, 0.0, 0.0 ], [ 1, 0, 0 ] )
+            union(){
+               translate( [ -1.0, 0, 0 ] )
+                  linear_extrude( 1.0 )  
+                     square( [ 2.0, 4 ] );                
+               linear_extrude( 7.5 )  
+                  square( [ 1.0, 4 ] );                
+               translate( [ 1.0, 3.0, 5.0 ] )
+                  my_sphere( 1.5 ); 
+            }              
+
+      difference(){	  
+          
+	     children();
+          
+		 // frontplate cutout
+   	     translate( 
+             zero3_z( location ) 
+             + [ 0.0, 3.5, - case_thickness( case ) ]
+          )
+	        linear_extrude( case_thickness( case ) )
+               square( [ 26.0, 15.0 ] );          
+			   
+         // room for the LCD itself
+	     translate( 
+            zero3_z( location )  
+            - [ 1.0, 0.0, 0.0 ] 
+         )
+	        linear_extrude( 10.0 )
+               square( [ 28.5, 26.5 ] );
+          
+         // room for the snap-ins
+         translate( zero3_z( location ) + [ - 3.0, 11.0, 0.0 ] )            
+            repeat2( [ 32.5, 0.0, 0.0 ], [ 1, 0, 0 ] )
+               linear_extrude( 8.0 )  
+                  square( [ 4.0, 6 ] );             
+      };
+   };      
+}
+
+module test_add_oled_128_64_full_cutout( part ){
+   case      = [ 35.0, 32.0, 1.0, 1.0, 1.0, 1.0, 1.0 ];
+    
+   add_oled_128_64_full_cutout( case, part, [ 5.0, 3.0, 1.0 ] )
+   case_tray( case, part, ridges = 5, rounding = 1 );
+}    
+
+test_add_oled_128_64_full_cutout( top );
+
+
+// ==========================================================================
+//
+// cutouts and rims for magnets, 
+// to be duct-taped to the inside of the bottom
+//
+// location x is offset to the middle 
+// location z is ignored
+//
+// ==========================================================================
+    
+magnets_diameter         = 20.0;
+magnets_distance         = [ 5.0, 10.0 ];
+magnets_cutout           = 0.4;
+
+// location == center
+module add_magnets( case, part, location, diameter ){  
+    
+   // the skin-thin bottom plate thickness left, 0.5 seems OK
+   skin   = 0.5; 
+    
+   // the margin between magnet and rim wall, 0.5 seems OK
+   margin = 0.5; 
+    
+   if( part == bottom ){   
+       
+      difference(){       
+           
+         children();
+          
+         // magnet cutout
+         translate( [ 
+            location[ 0 ] + case_inner_x_size( case ) / 2, 
+            location[ 1 ],
+            skin - case_thickness( case ), 
+         ] )
+         linear_extrude( case_thickness( case ) + 10.0)
+            repeat_plusmin( [ 5.0 + diameter / 2, 0.0 ] )
+               my_circle( margin + diameter / 2 );    
+      }          
+      
+      // magnets rim
+      translate( [ 
+         location[ 0 ] + case_inner_x_size( case ) / 2, 
+         location[ 1 ],
+         0
+      ] )
+      linear_extrude( 2.0 )
+         repeat_plusmin( [ 5.0 + diameter / 2, 0.0 ] )
+            difference(){
+               my_circle( margin + 1.0 + diameter / 2 );    
+               my_circle( margin + diameter / 2 );         
+            }
+       
+   } else if ( part == top ){
+             
+      children();
+                       
+   };      
+}
+
+module test_add_magnets( part ){
+   case      = [ 60.0, 30.0, 1.0, 1.0, 1.0, 1.0 ];
+    
+   add_magnets( case, part, [ 0.0, 15.0, 0.0 ], 20.0 )
+   case_tray( case, part, ridges = 4, rounding = 1 );
+}    
+
+//test_add_magnets( bottom );
 
 
 // ==========================================================================
@@ -853,7 +1015,7 @@ module test_blue_pill_one( part ){
    add_screw( case, part, [  3.0, 50.0, 0.0 ], screw )  
    add_screw( case, part, [ 57.0, 50.0, 0.0 ], screw )  
    add_pcb_slider_switch( part, case, pcb, pcb_6_4, 0 )  
-   add_add_lcd_5510_full_cutou( case, part, [ 20.0, 40.0, 0 ] )    
+   add_lcd_5510_full_cutout( case, part, [ 20.0, 40.0, 0 ] )    
    add_pcb( case, part, pcb, pcb_6_4 )    
    add_blue_pill( case, part, blue_pill ) 
    add_battery_compartment_2a3( case, part, [ 4.0, 0.0 ] )   
@@ -935,6 +1097,12 @@ module xadd_lcd_5510_full_cutout( part, location, height ){
 	     translate( location - [ 1.0, 1.0, 0.0 ] )
 	        linear_extrude( 20.0 )
                square( [ 46.0, 46.0 ] );
+          
+         // room for the snap-ins
+         !translate( location + [ -3.0, 19.0, 0.0 ] )            
+            repeat2( [ 50.0, 0.0, 0.0 ], [ 1, 0, 0 ] )
+               linear_extrude( 10.0 )  
+                  square( [ 2.5, 6 ] );           
       };
    };      
 }
