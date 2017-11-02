@@ -785,7 +785,7 @@ module add_lcd_5510_full_cutout( case, part, location ){
    } else if ( part == top ){
            
       // support distance squares and pegs
-      translate( location + [ 2.0, 2.0, 0.0 ] )
+      translate( zero3_z( location ) + [ 2.0, 2.0, 0.0 ] )
 	     repeat4( [ 40.0, 40.0 ] )
             union(){
 	           peg( [ 2.5 / 2, 4.0 ], rounding = 1 );
@@ -794,7 +794,7 @@ module add_lcd_5510_full_cutout( case, part, location ){
             };
             
       // snap-ins
-      translate( location + [ -2.0, 20.0, 0.0 ] )            
+      translate( zero3_z( location ) + [ -2.0, 20.0, 0.0 ] )            
          repeat2( [ 48.0, 0.0, 0.0 ], [ 1, 0, 0 ] )
             union(){
                linear_extrude( 6.0 )  
@@ -827,7 +827,7 @@ module add_lcd_5510_full_cutout( case, part, location ){
 }
 
 module test_add_lcd_5510_full_cutout( part ){
-   case      = [ 54.0, 51.0, 0.0, 1.0, 1.0, 1.0, 1.0 ];
+   case      = [ 54.0, 51.0, 0.0, 0.0, 1.0, 1.0, 1.0 ];
     
    add_lcd_5510_full_cutout( case, part, [ 5.0, 3.0, 1.0 ] )
    case_tray( case, part, ridges = 3, rounding = 1 );
