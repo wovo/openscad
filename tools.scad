@@ -38,19 +38,15 @@
 // - hight calculations & warnings
 // - standoff tool for soldering the lcd and oled
 // - smaller case with CR battery
-// - 5510
-// - oled
 // - current example has outside of the screw head
-// - test_tray()
 // - y value for 'please align'
-//
-// to test:
-// - LCD snap-ins 1mm higher
-// - LCD horizontal exclusion -1 both sides
+// - different wall/ground thickness, esp with ridges
+// - position front-things from PCB hole x/y
+// - object may not be a 2d manifold?? only on rendering, not prvieuw
 // 
 // ==========================================================================
 
-version  = "0.5";
+version  = "0.6";
 www      = "github: wovo/openscad";
 
 
@@ -374,8 +370,10 @@ function case_inner_x_size( h )         = h[ 0 ];
 function case_inner_y_size( h )         = h[ 1 ];
 function case_bottom_inner_z_size( h )  = h[ 2 ];
 function case_top_inner_z_size( h )     = h[ 3 ];
+function case_total_inner_z_size( h )   = h[ 2 ] + h[ 3 ];
 function case_thickness( h )            = h[ 4 ];
 function case_rounding( h )             = h[ 5 ];
+function case_total_outer_z_size( h )   = h[ 2 ] + h[ 3 ] + 2 * h[ 4 ];
 
 function case_part_inner_z_size( h, part ) = ( part == bottom ) 
    ? case_bottom_inner_z_size( h ) 
@@ -414,7 +412,7 @@ module test_case_tray(){
 //   screw height,
 //   nut diameter,
 //   nut height,
-//   total height ]
+//   thread height ]
 //
 // ==========================================================================
 
@@ -425,7 +423,7 @@ function m_screw_diameter( m )  = m[ 1 ];
 function m_screw_height( m )    = m[ 2 ];
 function m_nut_diameter( m )    = m[ 3 ];
 function m_nut_height( m )      = m[ 4 ];
-function m_total_height( m )    = m[ 5 ];
+function m_thread_height( m )   = m[ 5 ];
 
 module m_screw_recess( m ){
    linear_extrude( m_screw_height( m )) 
@@ -481,9 +479,6 @@ function pcb_hole_square( pcb ) =
 // components = height for components on the pcb
 //
 // ==========================================================================
-
-function case_total_inner_z_size( h )     = h[ 2 ] + h[ 3 ];
-
 
 module add_pcb( 
    case, part, location, 
@@ -695,9 +690,17 @@ module add_screw( case, part, location, s, rotation = [ 0, 0, 90 ] ){
       ? 6 : 0; 
    peg_height = ( part == bottom )
       ? case_bottom_inner_z_size( case ) : case_top_inner_z_size( case );
-   recess_height = ( part == bottom ) 
-      ? m_nut_height( s ) : m_screw_height( s ); 
-  
+   recess_height = ( part == top ) 
+      ? m_screw_height( s ) 
+      : case_total_outer_z_size( case ) 
+           - m_nut_height( s ) - m_thread_height( s ); 
+
+   if( part == bottom ){    
+      if( recess_height < m_nut_height( s ) ){
+         echo( "your screws are too short" );
+      }          
+   }
+   
    difference(){  
       union(){
          children(); 
@@ -732,7 +735,7 @@ module add_screw( case, part, location, s, rotation = [ 0, 0, 90 ] ){
 module test_screw( part ){
    case      = [ 50.0, 50.0, 10.0, 5.0, 1.0, 1.0 ];
      
-   //add_screw( case, part, [ 10.0, 10.0, 0.0 ], m3( 20.0 ) )
+   add_screw( case, part, [ 10.0, 10.0, 0.0 ], m3( 20.0 ) )
    case_tray( case, part, ridges = 0 );    
 }
 
@@ -755,8 +758,9 @@ module text_line( t ){
 
 module add_text2( case, part, location, x ){
    difference(){
-      children();       
+      children(); 
       translate( location - [ 0, 0, 0.5 ] )
+      mirror( [ 1, 0, 0 ] )       
       linear_extrude( 1.0 )
       translate( [ 0, - text_size ] ){
          text_line( x[ 0 ] );
@@ -778,8 +782,10 @@ module add_text2( case, part, location, x ){
 // ==========================================================================
 
 // location == PCB corner
-module add_lcd_5510_full_cutout( case, part, location ){
-    
+module add_lcd_5510_full_cutout( case, part, raw_location ){
+
+   location = raw_location - [ 7.0, 41.0, 0 ];    
+        
    if( part == bottom ){   
        
       // add keepout?
@@ -880,13 +886,13 @@ module add_oled_128_64_full_cutout( case, part, location ){
       translate( zero3_z( location ) + [ - 2.0, 12.0, 0.0 ] )            
          repeat2( [ 30.5, 0.0, 0.0 ], [ 1, 0, 0 ] )
             union(){
-               translate( [ -1.0, 0, 0 ] )
-                  linear_extrude( 1.0 )  
-                     square( [ 2.0, 4 ] );                
-               linear_extrude( 7.5 )  
+               rotate( [ 90, 0, 180 ] ) 
+                  linear_extrude( 4.0 ) 
+                     polygon( [ [ 0, 0 ], [ 1.5, 0 ], [ 0, 3.5 ] ] );
+               linear_extrude( 7.0 )  
                   square( [ 1.0, 4 ] );                
-               translate( [ 1.0, 3.0, 5.0 ] )
-                  my_sphere( 1.5 ); 
+               translate( [ 1.0, 2.0, 5.5 ] )
+                  my_sphere( 1.0 ); 
             }              
 
       difference(){	  
@@ -896,18 +902,18 @@ module add_oled_128_64_full_cutout( case, part, location ){
 		 // frontplate cutout
    	     translate( 
              zero3_z( location ) 
-             + [ 0.0, 3.5, - case_thickness( case ) ]
+             + [ 1.0, 4.5, - case_thickness( case ) ]
           )
 	        linear_extrude( case_thickness( case ) )
-               square( [ 26.0, 15.0 ] );          
+               square( [ 24.0, 13.0 ] );          
 			   
          // room for the LCD itself
 	     translate( 
             zero3_z( location )  
-            - [ 1.0, 0.0, 0.0 ] 
+            + [ - 1.0, 0.5, 0.0 ] 
          )
 	        linear_extrude( 10.0 )
-               square( [ 28.5, 26.5 ] );
+               square( [ 28.5, 26.0 ] );
           
          // room for the snap-ins
          translate( zero3_z( location ) + [ - 3.0, 11.0, 0.0 ] )            
@@ -919,13 +925,13 @@ module add_oled_128_64_full_cutout( case, part, location ){
 }
 
 module test_add_oled_128_64_full_cutout( part ){
-   case      = [ 35.0, 32.0, 1.0, 1.0, 1.0, 1.0, 1.0 ];
+   case      = [ 36.0, 32.0, 1.0, 1.0, 1.0, 1.0, 1.0 ];
     
    add_oled_128_64_full_cutout( case, part, [ 5.0, 3.0, 1.0 ] )
    case_tray( case, part, ridges = 5, rounding = 1 );
 }    
 
-test_add_oled_128_64_full_cutout( top );
+//test_add_oled_128_64_full_cutout( top );
 
 
 // ==========================================================================
@@ -937,13 +943,14 @@ test_add_oled_128_64_full_cutout( top );
 // location z is ignored
 //
 // ==========================================================================
-    
-magnets_diameter         = 20.0;
-magnets_distance         = [ 5.0, 10.0 ];
-magnets_cutout           = 0.4;
+
+function magnet_diameter( m )   = m[ 0 ];
+function magnet_thickness( m )  = m[ 1 ];
+
+magnet_2002 = [ 20.0, 2.0 ];
 
 // location == center
-module add_magnets( case, part, location, diameter ){  
+module add_magnets( case, part, location, magnet ){  
     
    // the skin-thin bottom plate thickness left, 0.5 seems OK
    skin   = 0.5; 
@@ -953,6 +960,8 @@ module add_magnets( case, part, location, diameter ){
     
    if( part == bottom ){   
        
+      sink = case_thickness( case ) - skin;
+      
       difference(){       
            
          children();
@@ -961,11 +970,11 @@ module add_magnets( case, part, location, diameter ){
          translate( [ 
             location[ 0 ] + case_inner_x_size( case ) / 2, 
             location[ 1 ],
-            skin - case_thickness( case ), 
+            - sink, 
          ] )
          linear_extrude( case_thickness( case ) + 10.0)
-            repeat_plusmin( [ 5.0 + diameter / 2, 0.0 ] )
-               my_circle( margin + diameter / 2 );    
+            repeat_plusmin( [ 5.0 + magnet_diameter( magnet )  / 2, 0.0 ] )
+               my_circle( margin + magnet_diameter( magnet ) / 2 );    
       }          
       
       // magnets rim
@@ -974,11 +983,11 @@ module add_magnets( case, part, location, diameter ){
          location[ 1 ],
          0
       ] )
-      linear_extrude( 2.0 )
-         repeat_plusmin( [ 5.0 + diameter / 2, 0.0 ] )
+      linear_extrude( magnet_thickness( magnet ) - sink )
+         repeat_plusmin( [ 5.0 + magnet_diameter( magnet ) / 2, 0.0 ] )
             difference(){
-               my_circle( margin + 1.0 + diameter / 2 );    
-               my_circle( margin + diameter / 2 );         
+               my_circle( margin + 1.0 + magnet_diameter( magnet ) / 2 );    
+               my_circle( margin + magnet_diameter( magnet ) / 2 );         
             }
        
    } else if ( part == top ){
@@ -991,7 +1000,7 @@ module add_magnets( case, part, location, diameter ){
 module test_add_magnets( part ){
    case      = [ 60.0, 30.0, 1.0, 1.0, 1.0, 1.0 ];
     
-   add_magnets( case, part, [ 0.0, 15.0, 0.0 ], 20.0 )
+   add_magnets( case, part, [ 0.0, 15.0, 0.0 ], magnet_2002 )
    case_tray( case, part, ridges = 4, rounding = 1 );
 }    
 
@@ -1003,19 +1012,35 @@ module test_add_magnets( part ){
 // 2aaa, blue-pill, 5x7, switch, lcd
 //
 // ==========================================================================
+
+function pcb_relative( pcb, offset ) = make3( pcb + 2.54 * offset );
+// [ 8.0, 40.0, 0 ]
+
+module finish( case, part ){
+   if( part == bottom ){
+      children();    
+   } else {    
+      translate( [ -5.0, 0, 0 ] ) 
+         mirror( [ 1, 0, 0 ] )        
+            children();    
+   }       
+}
+
     
 module test_blue_pill_one( part ){
-   case      = [ 61.0, 99.0, 10.0, 5.0, 1.0, 1.0 ];
+   case      = [ 61.0, 99.0, 10.0, 8.0, 1.0, 1.0 ];
    battery   = [ 0.0, 0.0, 0.0 ];
    blue_pill = [ 2.5, 24.0, 3.0 ];
    pcb       = [ 0.0, 58.0, 3.0 ];
-   screw     = m3( 20.0 );
+   screw     = m3( 12.0 );
    info      = [ str( "blue pill one v ", version ), www ];
     
+   finish( case, part ) 
    add_screw( case, part, [  3.0, 50.0, 0.0 ], screw )  
    add_screw( case, part, [ 57.0, 50.0, 0.0 ], screw )  
+   add_magnets( case, part, [ 0.0, 75.0, 0.0 ], magnet_2002 )
    add_pcb_slider_switch( part, case, pcb, pcb_6_4, 0 )  
-   add_lcd_5510_full_cutout( case, part, [ 20.0, 40.0, 0 ] )    
+   add_lcd_5510_full_cutout( case, part, pcb_relative( pcb, [ 6, 2 ] ) )    
    add_pcb( case, part, pcb, pcb_6_4 )    
    add_blue_pill( case, part, blue_pill ) 
    add_battery_compartment_2a3( case, part, [ 4.0, 0.0 ] )   
@@ -1023,7 +1048,7 @@ module test_blue_pill_one( part ){
    case_tray( case, part, ridges = 0 );    
 }
 
-//test_blue_pill_one( bottom ); translate( [ -70.0, 0, 0 ] ) test_blue_pill_one( top );
+test_blue_pill_one( bottom ); test_blue_pill_one( top );
 
 
 // ==========================================================================
