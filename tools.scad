@@ -43,6 +43,10 @@
 // - different wall/ground thickness, esp with ridges
 // - position front-things from PCB hole x/y
 // - object may not be a 2d manifold?? only on rendering, not prvieuw
+// - bar under blue-pill is too massive
+//
+// untested:
+// - text now correctly mirrored
 // 
 // ==========================================================================
 
@@ -756,17 +760,26 @@ module text_line( t ){
       halign = "center", valign = "center", $fn = circle_sides );
 }
 
+module conditional_mirror( c, m ){
+   if( c ){
+      mirror( m )
+         children(); 
+   } else {
+      children();       
+   }    
+}
+
 module add_text2( case, part, location, x ){
    difference(){
       children(); 
       translate( location - [ 0, 0, 0.5 ] )
-      mirror( [ 1, 0, 0 ] )       
-      linear_extrude( 1.0 )
-      translate( [ 0, - text_size ] ){
-         text_line( x[ 0 ] );
-	     translate( [ 0, 2 * text_size ] )
-	        text_line( x[ 1 ] );
-      };
+      conditional_mirror( part == top, [ 1, 0, 0 ] )       
+         linear_extrude( 1.0 )
+         translate( [ 0, - text_size ] ){
+            text_line( x[ 0 ] );
+   	        translate( [ 0, 2 * text_size ] )
+	           text_line( x[ 1 ] );
+         };
   }      
 } 
 
